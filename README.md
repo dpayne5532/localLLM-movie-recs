@@ -256,6 +256,173 @@ This POC uses a movie recommendation engine as a safe, non-sensitive proxy for h
 4. LLM generates personalized recommendations using retrieved context
 5. Output written to SFTP outbound folder
 
+---
+
+### Knowledge Base Construction: TMDB Data Acquisition
+
+To build a realistic proof of concept, we sourced comprehensive movie data from **The Movie Database (TMDB)**, an industry-standard film metadata repository. This demonstrates how organizational knowledge bases would be constructed for healthcare applications.
+
+#### Data Sourcing Process
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    KNOWLEDGE BASE CONSTRUCTION PIPELINE                          │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+    EXTERNAL DATA SOURCE                          LOCAL INFRASTRUCTURE
+    ────────────────────                          ────────────────────
+
+    ┌─────────────────┐                          ┌─────────────────────┐
+    │   TMDB API      │    One-Time Download     │   Raw Data Files    │
+    │                 │ ─────────────────────▶   │                     │
+    │ • 900K+ movies  │     (During Setup)       │ • 77 JSON batches   │
+    │ • Cast/crew     │                          │ • 3.1 GB total      │
+    │ • Metadata      │                          │ • Stored locally    │
+    └─────────────────┘                          └──────────┬──────────┘
+                                                            │
+                                                            │ Index Builder
+                                                            │ (build-movie-index.js)
+                                                            ▼
+                                                 ┌─────────────────────┐
+                                                 │  Searchable Index   │
+                                                 │                     │
+                                                 │ • 38,357 movies     │
+                                                 │ • Deduplicated      │
+                                                 │ • Quality filtered  │
+                                                 │ • 38.7 MB index     │
+                                                 └─────────────────────┘
+                                                            │
+                          ┌─────────────────────────────────┴─────────────────┐
+                          │                                                   │
+                          ▼                                                   ▼
+               ┌─────────────────────┐                         ┌─────────────────────┐
+               │   Keyword Search    │                         │   Entity Extraction │
+               │                     │                         │                     │
+               │ • Full-text search  │                         │ • Actor detection   │
+               │ • Title matching    │                         │ • Genre parsing     │
+               │ • Plot analysis     │                         │ • Decade filtering  │
+               └─────────────────────┘                         └─────────────────────┘
+```
+
+#### What We Downloaded
+
+| Data Category | Records | Description |
+|--------------|---------|-------------|
+| **Movie Details** | 38,357 | Full metadata for films rated 5.0+ |
+| **Cast & Crew** | ~500K | Top 10 actors + director per film |
+| **Genres** | 19 | Action, Drama, Thriller, Comedy, etc. |
+| **Time Span** | 130 years | Films from 1890s through 2025 |
+| **Geographic Coverage** | Global | Films from 50+ countries |
+
+#### Data Acquisition Scripts
+
+The download process used Python scripts interfacing with the TMDB API:
+
+```python
+# Simplified overview of data collection approach
+def download_movie_data():
+    # 1. Download all movies by genre (19 genres × 100 pages each)
+    for genre in genres:
+        download_discover_by_genre(genre)
+
+    # 2. Download movies by year (last 50 years)
+    for year in range(1975, 2026):
+        download_discover_by_year(year)
+
+    # 3. Fetch detailed info (cast, crew, plot, ratings)
+    for movie_id in collected_ids:
+        fetch_movie_details(movie_id)  # Includes credits, keywords, etc.
+```
+
+**Key Technical Details:**
+- **Rate Limiting:** 40 requests/10 seconds (TMDB API limit)
+- **Parallel Processing:** 8 concurrent workers
+- **Batch Size:** 1,000 movies per output file
+- **Total Download Time:** ~4 hours
+- **Raw Data Size:** 3.1 GB across 77 JSON files
+
+#### Index Building Process
+
+After downloading, we built a searchable index optimized for RAG retrieval:
+
+```javascript
+// Index builder processes raw TMDB data
+function processMovie(movie) {
+    return {
+        id: movie.id,
+        title: movie.title,
+        year: extractYear(movie.release_date),
+        genres: movie.genres.map(g => g.name.toLowerCase()),
+        rating: movie.vote_average,
+        overview: movie.overview,
+        cast: extractTopCast(movie.credits, 10),
+        director: extractDirector(movie.credits),
+        // Concatenated searchable text for fast retrieval
+        searchText: buildSearchableText(movie)
+    };
+}
+```
+
+**Index Statistics:**
+- **Input:** 3.1 GB raw JSON data
+- **Output:** 38.7 MB searchable index
+- **Compression:** 80x reduction through field selection
+- **Build Time:** ~5 minutes on Mac Mini M4 Pro
+
+#### Healthcare Parallel: Building a Medical Knowledge Base
+
+This same pipeline architecture applies directly to healthcare data sources:
+
+| Movie POC | Healthcare Production |
+|-----------|----------------------|
+| TMDB API | CMS downloads, payer policy portals, medical literature APIs |
+| Movie metadata JSON | Medical policy PDFs, clinical guidelines, fee schedules |
+| Genre/year categorization | Specialty, procedure type, date of service |
+| Cast/director extraction | Provider NPIs, facility identifiers |
+| Rating/popularity scores | Evidence grades, utilization patterns |
+| Plot summaries | Clinical criteria, coverage requirements |
+
+**Example Healthcare Data Sources:**
+- **CMS:** Fee schedules, LCD/NCD policies, HCPCS codes
+- **AMA:** CPT code descriptions, coding guidelines
+- **WHO:** ICD-10 classifications
+- **Payer-specific:** Medical policies, prior auth requirements, contract terms
+- **Clinical:** InterQual, MCG, proprietary clinical criteria
+
+#### Data Isolation Guarantee
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                     DATA ISOLATION ARCHITECTURE                       │
+└──────────────────────────────────────────────────────────────────────┘
+
+  SETUP PHASE (One-Time)              OPERATIONAL PHASE (Ongoing)
+  ──────────────────────              ─────────────────────────────
+
+  Internet ◀──────────▶ API          Internet ◀──────────▶ SFTP Only
+         │                                    │
+         │ Download                           │ File Transfer
+         ▼                                    ▼
+  ┌─────────────┐                     ┌─────────────┐
+  │ Raw Data    │                     │ Inbound/    │
+  │ (3.1 GB)    │                     │ Outbound    │
+  └──────┬──────┘                     └──────┬──────┘
+         │                                    │
+         │ Build Index                        │ Process
+         ▼                                    ▼
+  ┌─────────────┐                     ┌─────────────┐
+  │ Local Index │ ◀───────────────▶   │ Local LLM   │
+  │ (38.7 MB)   │   RAG Queries       │ (Ollama)    │
+  └─────────────┘                     └─────────────┘
+
+  After setup: NO INTERNET            Only SFTP touches internet
+  connection to knowledge base        PHI never transmitted externally
+```
+
+**Critical Point for Healthcare:** Once the knowledge base is constructed, the system operates in a completely air-gapped mode. The SFTP gateway handles only encrypted file transfers—no PHI is ever transmitted to external AI services, APIs, or cloud providers.
+
+---
+
 **Sample Input:**
 ```
 I love movies with Tom Hanks and Leonardo DiCaprio.
