@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Local settings (contains secrets)
+local.settings.json
+
+# Azure Functions
+bin/
+obj/
+.python_packages/
+
+# Build outputs
+dist/
+
+# Local development
+.vscode/
+*.log
+azurite-data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+.claude/settings.local.json
+local.settings.json
+data/movie-index.json

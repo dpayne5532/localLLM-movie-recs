@@ -1,0 +1,45 @@
+{
+  "userId": "user-12345",
+  "favoriteActors": [
+    "Tom Hanks",
+    "Meryl Streep",
+    "Leonardo DiCaprio"
+  ],
+  "genres": [
+    "drama",
+    "thriller",
+    "science-fiction"
+  ],
+  "preferredPlots": [
+    "redemption arcs",
+    "heist stories",
+    "time travel"
+  ],
+  "exampleMovies": [
+    {
+      "title": "Inception",
+      "year": 2010,
+      "rating": 5
+    },
+    {
+      "title": "The Shawshank Redemption",
+      "year": 1994,
+      "rating": 5
+    },
+    {
+      "title": "Interstellar",
+      "year": 2014,
+      "rating": 4
+    }
+  ],
+  "dislikedGenres": [
+    "horror",
+    "romantic-comedy"
+  ],
+  "preferredDecades": [
+    "1990s",
+    "2000s",
+    "2010s"
+  ],
+  "maxResults": 10
+}
