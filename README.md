@@ -53,7 +53,7 @@ Traditional cloud-based AI services (OpenAI, Azure AI, AWS Bedrock, Google Verte
 │         │                            │  Knowledge  │                       │
 │         │                            │    Base     │                       │
 │    ONLY INTERNET                     │             │                       │
-│      CONNECTION                      │ • 38K docs  │                       │
+│      CONNECTION                      │ • 115K docs │                       │
 │                                      │ • Indexed   │                       │
 │                                      │ • Searchable│                       │
 │                                      └─────────────┘                       │
@@ -236,14 +236,14 @@ This POC uses a movie recommendation engine as a safe, non-sensitive proxy for h
 | Movie POC Component | Healthcare Equivalent |
 |--------------------|----------------------|
 | User movie preferences (text) | Claim submission / prior auth request |
-| Movie database (38K films) | Payer policies, medical guidelines, coding references |
+| Movie database (115K films) | Payer policies, medical guidelines, coding references |
 | RAG search for relevant movies | Policy lookup, similar case retrieval |
 | LLM recommendation generation | Adjudication decision, auth determination |
 | Recommendation output | Claim decision, auth approval/denial |
 
 ### Current Implementation
 
-**Knowledge Base:** 38,357 movies indexed with:
+**Knowledge Base:** 114,790 total movies downloaded (38,357 quality-filtered and indexed) with:
 - Title, year, genres
 - Cast and director
 - Plot summaries
@@ -286,10 +286,10 @@ To build a realistic proof of concept, we sourced comprehensive movie data from 
                                                  ┌─────────────────────┐
                                                  │  Searchable Index   │
                                                  │                     │
-                                                 │ • 38,357 movies     │
-                                                 │ • Deduplicated      │
-                                                 │ • Quality filtered  │
-                                                 │ • 38.7 MB index     │
+                                                 │ • 114,790 unique    │
+                                                 │ • 75K full details  │
+                                                 │ • 38K quality-      │
+                                                 │   filtered indexed  │
                                                  └─────────────────────┘
                                                             │
                           ┌─────────────────────────────────┴─────────────────┐
@@ -308,8 +308,11 @@ To build a realistic proof of concept, we sourced comprehensive movie data from 
 
 | Data Category | Records | Description |
 |--------------|---------|-------------|
-| **Movie Details** | 38,357 | Full metadata for films rated 5.0+ |
-| **Cast & Crew** | ~500K | Top 10 actors + director per film |
+| **Total Unique Movies** | 114,790 | Complete TMDB catalog coverage |
+| **Movies with Full Details** | 75,597 | Credits, keywords, videos, reviews |
+| **Movies in Lists/Years/Genres** | 109,327 | Basic metadata and categorization |
+| **Indexed for RAG** | 38,357 | Quality-filtered (rating ≥ 5.0) for recommendations |
+| **Cast & Crew** | ~750K+ | Top 10 actors + director per film |
 | **Genres** | 19 | Action, Drama, Thriller, Comedy, etc. |
 | **Time Span** | 130 years | Films from 1890s through 2025 |
 | **Geographic Coverage** | Global | Films from 50+ countries |
